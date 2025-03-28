@@ -36,6 +36,7 @@ if st.session_state.get("user_text_input_reset"):
     st.session_state["user_text_input"] = ""
     del st.session_state["user_text_input_reset"]
     st.experimental_rerun()
+    st.stop()  # ⛔ Prevents Streamlit from rendering any further
 
 # Input field
 user_input = st.text_area(
