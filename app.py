@@ -58,7 +58,7 @@ if st.button("Continue Board Session") and user_input:
         advisor_messages.append((name, reply))
 
     st.session_state.round += 1
-    st.session_state.user_input = ""
+    st.session_state["user_input"] = ""
 
 # Display entire boardroom discussion
 st.markdown("## Boardroom Session Log")
