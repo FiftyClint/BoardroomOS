@@ -3,6 +3,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+# Set advisor personas
 advisors = {
     "Charlie Munger": "You are Charlie Munger, the chairperson of the board. Consolidate feedback, moderate disputes, and summarize the board’s progress. Push for consensus. Score only after evaluating all board input.",
     "Alex Hormozi": "You are Alex Hormozi, focused on monetization, scaling, and customer acquisition. Be direct, tactical, and iterate quickly.",
@@ -14,10 +15,12 @@ advisors = {
     "Sam Altman": "You are Sam Altman, focused on scalable innovation, AI, defensibility, and long-term future bets. Ground all ideas in first-principles logic."
 }
 
+# Set up Streamlit
 st.set_page_config(page_title="BoardroomOS", layout="centered")
 st.title("BoardroomOS")
 st.write("Your AI board of directors will simulate discussion and iterate together until they reach consensus. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence. The session ends only when every advisor scores ≥8/10 in all three categories.")
 
+# Initialize session state
 if "chat_log" not in st.session_state:
     st.session_state.chat_log = []
 if "round" not in st.session_state:
@@ -27,26 +30,42 @@ if "advisor_feedback" not in st.session_state:
 if "iteration_summary" not in st.session_state:
     st.session_state.iteration_summary = ""
 
-# Handle clearing/reset flag
+# 🔄 Safe input reset and rerun BEFORE UI renders
 if st.session_state.get("user_text_input_reset"):
     st.session_state["user_text_input"] = ""
     del st.session_state["user_text_input_reset"]
+    st.experimental_rerun()
 
+# Input field
 user_input = st.text_area("Describe your business challenge or respond to the board:", height=100, key="user_text_input")
 
+# Main board interaction
 if st.button("Continue Board Session") and st.session_state.get("user_text_input", "").strip():
     user_input = st.session_state["user_text_input"]
     st.session_state.chat_log.append(("You", user_input))
     advisor_messages = []
 
     for name, persona in advisors.items():
-        # Build context including previous advisor comments
+        # Build internal discussion context
         thread = ""
         for prior_name, prior_msg in st.session_state.chat_log[-len(advisors):]:
             if prior_name != name:
                 thread += f"{prior_name}: {prior_msg}\n"
 
-        prompt = f"Round {st.session_state.round}:\n\nBusiness challenge: {user_input}\n\nOther board members have said:\n{thread}\n\nPlease respond with:\n1. Your next recommendation (as yourself).\n2. A score for Capital Allocation (1–10)\n3. A score for Market Advantage (1–10)\n4. A score for Business Model Confidence (1–10)\n5. What would need to improve to raise all 3 scores to at least 8/10."
+        # Create round-specific prompt
+        prompt = f\"\"\"Round {st.session_state.round}:
+
+Business challenge: {user_input}
+
+Other board members have said:
+{thread}
+
+Please respond with:
+1. Your next recommendation (as yourself).
+2. A score for Capital Allocation (1–10)
+3. A score for Market Advantage (1–10)
+4. A score for Business Model Confidence (1–10)
+5. What would need to improve to raise all 3 scores to at least 8/10.\"\"\"
 
         try:
             response = client.chat.completions.create(
@@ -64,10 +83,10 @@ if st.button("Continue Board Session") and st.session_state.get("user_text_input
         advisor_messages.append((name, reply))
 
     st.session_state.round += 1
-    st.session_state["user_text_input_reset"] = True
+    st.session_state["user_text_input_reset"] = True  # trigger reset next run
     st.experimental_rerun()
 
-# Display entire boardroom discussion
+# Display log
 st.markdown("## Boardroom Session Log")
 for name, msg in st.session_state.chat_log:
     st.markdown(f"**{name}**: {msg}")
