@@ -27,9 +27,11 @@ if "advisor_feedback" not in st.session_state:
 if "iteration_summary" not in st.session_state:
     st.session_state.iteration_summary = ""
 
-user_input = st.text_area("Describe your business challenge or respond to the board:", height=100, key="user_input")
+user_input = st.text_area("Describe your business challenge or respond to the board:", height=100, key="user_text_input")
 
-if st.button("Continue Board Session") and user_input:
+
+if st.button("Continue Board Session") and st.session_state.get("user_text_input", "").strip():
+    user_input = st.session_state["user_text_input"]
     st.session_state.chat_log.append(("You", user_input))
     advisor_messages = []
 
@@ -58,7 +60,7 @@ if st.button("Continue Board Session") and user_input:
         advisor_messages.append((name, reply))
 
     st.session_state.round += 1
-    st.session_state["user_input"] = ""
+    st.session_state["user_text_input"] = ""  # this matches the key in your text_area
 
 # Display entire boardroom discussion
 st.markdown("## Boardroom Session Log")
