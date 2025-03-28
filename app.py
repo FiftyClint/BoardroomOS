@@ -30,13 +30,8 @@ if "advisor_feedback" not in st.session_state:
     st.session_state.advisor_feedback = {}
 if "iteration_summary" not in st.session_state:
     st.session_state.iteration_summary = ""
-
-# Safe input reset and rerun BEFORE UI renders
-if st.session_state.get("user_text_input_reset"):
-    st.session_state["user_text_input"] = ""
-    del st.session_state["user_text_input_reset"]
-    st.experimental_rerun()
-    st.stop()  # ⛔ Prevents Streamlit from rendering any further
+if "user_text_input" not in st.session_state:
+    st.session_state.user_text_input = ""
 
 # Input field
 user_input = st.text_area(
@@ -46,8 +41,8 @@ user_input = st.text_area(
 )
 
 # Main board interaction
-if st.button("Continue Board Session") and st.session_state.get("user_text_input", "").strip():
-    user_input = st.session_state["user_text_input"]
+if st.button("Continue Board Session") and st.session_state.user_text_input.strip():
+    user_input = st.session_state.user_text_input
     st.session_state.chat_log.append(("You", user_input))
     advisor_messages = []
 
@@ -58,7 +53,7 @@ if st.button("Continue Board Session") and st.session_state.get("user_text_input
             if prior_name != name:
                 thread += f"{prior_name}: {prior_msg}\n"
 
-        # Create prompt with advisor context
+        # Create prompt
         prompt = f"""Round {st.session_state.round}:
 
 Business challenge: {user_input}
@@ -89,11 +84,11 @@ Please respond with:
         st.session_state.chat_log.append((name, reply))
         advisor_messages.append((name, reply))
 
+    # Manually clear input for next round
+    st.session_state.user_text_input = ""
     st.session_state.round += 1
-    st.session_state["user_text_input_reset"] = True
-    st.experimental_rerun()
 
-# Display conversation thread
+# Display conversation log
 st.markdown("## Boardroom Session Log")
 for name, msg in st.session_state.chat_log:
     st.markdown(f"**{name}**: {msg}")
