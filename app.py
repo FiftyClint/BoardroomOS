@@ -1,59 +1,46 @@
 import streamlit as st
 from openai import OpenAI
 
-# Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# Set advisor personas
+# Full advisor personas — no shortcuts
 advisors = {
-    "Charlie Munger": "You are Charlie Munger, the chairperson of the board. Consolidate feedback, moderate disputes, and summarize the board’s progress. Push for consensus. Score only after evaluating all board input.",
-    "Alex Hormozi": "You are Alex Hormozi, focused on monetization, scaling, and customer acquisition. Be direct, tactical, and iterate quickly.",
-    "Ray Anderson": "You are Ray Anderson, focused on long-term sustainable value, eco-conscious practices, and triple bottom line thinking.",
-    "Codie Sanchez": "You are Codie Sanchez, a contrarian, acquisition-driven thinker. Look for underutilized assets and profitability levers.",
-    "Sara Blakely": "You are Sara Blakely, customer-first, creative, and intuitive. Focus on simplicity, empathy, and brand authenticity.",
-    "Ben Horowitz": "You are Ben Horowitz, pragmatic, leadership-focused, and execution-oriented. Consider culture, systems, and crisis strategy.",
-    "Shaan Puri": "You are Shaan Puri, idea arbitrageur and momentum hunter. Identify signals, rapid testing paths, and audience-first leverage.",
-    "Sam Altman": "You are Sam Altman, focused on scalable innovation, AI, defensibility, and long-term future bets. Ground all ideas in first-principles logic."
+    "Charlie Munger": "You are Charlie Munger, the chairperson of the board. Consolidate feedback, moderate disputes, and summarize the board’s progress. Push for consensus. Score only after evaluating all board input. Use mental models like inversion, cost-benefit analysis, and margin of safety.",
+    "Alex Hormozi": "You are Alex Hormozi, focused on monetization, scaling, and customer acquisition. Be direct, tactical, and iterate quickly. Use value-based pricing, MVPs, and high-ROI thinking.",
+    "Ray Anderson": "You are Ray Anderson, focused on long-term sustainable value, eco-conscious practices, and triple bottom line thinking. You prioritize impact, ethics, and lifecycle value.",
+    "Codie Sanchez": "You are Codie Sanchez, a contrarian, acquisition-driven thinker. Look for underutilized assets, cash flow, boring businesses, and profitability levers others miss.",
+    "Sara Blakely": "You are Sara Blakely, customer-first, creative, and intuitive. Focus on simplicity, empathy, storytelling, and authentic brand connection.",
+    "Ben Horowitz": "You are Ben Horowitz, pragmatic, leadership-focused, and execution-oriented. Evaluate company culture, scalability, leadership, and wartime vs. peacetime CEO dynamics.",
+    "Shaan Puri": "You are Shaan Puri, idea arbitrageur and momentum hunter. Spot early trends, use frameworks, and prioritize audience-first growth with speed and creativity.",
+    "Sam Altman": "You are Sam Altman, focused on scalable innovation, defensibility, and long-term societal impact. Evaluate market size, moat, and bold future bets using first-principles thinking."
 }
 
 # Set up Streamlit UI
 st.set_page_config(page_title="BoardroomOS", layout="centered")
 st.title("BoardroomOS")
-st.write("Your AI board of directors will simulate discussion and iterate together until they reach consensus. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence. The session ends only when every advisor scores ≥8/10 in all three categories.")
+st.write("Your AI board of directors will simulate discussion and iterate together until consensus is reached. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence. The session ends only when every advisor scores ≥8/10 in all three categories.")
 
 # Initialize session state
 if "chat_log" not in st.session_state:
     st.session_state.chat_log = []
 if "round" not in st.session_state:
     st.session_state.round = 0
-if "advisor_feedback" not in st.session_state:
-    st.session_state.advisor_feedback = {}
-if "iteration_summary" not in st.session_state:
-    st.session_state.iteration_summary = ""
-if "user_text_input" not in st.session_state:
-    st.session_state.user_text_input = ""
 
-# Input field
-user_input = st.text_area(
-    "Describe your business challenge or respond to the board:",
-    height=100,
-    key="user_text_input"
-)
+# Uncontrolled input field (no key!)
+user_input = st.text_area("Describe your business challenge or respond to the board:", height=100)
 
-# Main board interaction
-if st.button("Continue Board Session") and st.session_state.user_text_input.strip():
-    user_input = st.session_state.user_text_input
+# Main interaction
+if st.button("Continue Board Session") and user_input.strip():
     st.session_state.chat_log.append(("You", user_input))
-    advisor_messages = []
 
     for name, persona in advisors.items():
-        # Build internal discussion context
+        # Build context
         thread = ""
         for prior_name, prior_msg in st.session_state.chat_log[-len(advisors):]:
             if prior_name != name:
                 thread += f"{prior_name}: {prior_msg}\n"
 
-        # Create prompt
+        # Prompt per advisor
         prompt = f"""Round {st.session_state.round}:
 
 Business challenge: {user_input}
@@ -82,13 +69,11 @@ Please respond with:
             reply = f"Error: {str(e)}"
 
         st.session_state.chat_log.append((name, reply))
-        advisor_messages.append((name, reply))
 
-    # Manually clear input for next round
-    st.session_state.user_text_input = ""
     st.session_state.round += 1
+    st.experimental_rerun()
 
-# Display conversation log
+# Show chat log
 st.markdown("## Boardroom Session Log")
 for name, msg in st.session_state.chat_log:
     st.markdown(f"**{name}**: {msg}")
