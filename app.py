@@ -1,6 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 
+# Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # Set advisor personas
@@ -15,7 +16,7 @@ advisors = {
     "Sam Altman": "You are Sam Altman, focused on scalable innovation, AI, defensibility, and long-term future bets. Ground all ideas in first-principles logic."
 }
 
-# Set up Streamlit
+# Set up Streamlit UI
 st.set_page_config(page_title="BoardroomOS", layout="centered")
 st.title("BoardroomOS")
 st.write("Your AI board of directors will simulate discussion and iterate together until they reach consensus. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence. The session ends only when every advisor scores ≥8/10 in all three categories.")
@@ -30,14 +31,18 @@ if "advisor_feedback" not in st.session_state:
 if "iteration_summary" not in st.session_state:
     st.session_state.iteration_summary = ""
 
-# 🔄 Safe input reset and rerun BEFORE UI renders
+# Safe input reset and rerun BEFORE UI renders
 if st.session_state.get("user_text_input_reset"):
     st.session_state["user_text_input"] = ""
     del st.session_state["user_text_input_reset"]
     st.experimental_rerun()
 
 # Input field
-user_input = st.text_area("Describe your business challenge or respond to the board:", height=100, key="user_text_input")
+user_input = st.text_area(
+    "Describe your business challenge or respond to the board:",
+    height=100,
+    key="user_text_input"
+)
 
 # Main board interaction
 if st.button("Continue Board Session") and st.session_state.get("user_text_input", "").strip():
@@ -52,8 +57,8 @@ if st.button("Continue Board Session") and st.session_state.get("user_text_input
             if prior_name != name:
                 thread += f"{prior_name}: {prior_msg}\n"
 
-        # Create round-specific prompt
-        prompt = f\"\"\"Round {st.session_state.round}:
+        # Create prompt with advisor context
+        prompt = f"""Round {st.session_state.round}:
 
 Business challenge: {user_input}
 
@@ -65,7 +70,8 @@ Please respond with:
 2. A score for Capital Allocation (1–10)
 3. A score for Market Advantage (1–10)
 4. A score for Business Model Confidence (1–10)
-5. What would need to improve to raise all 3 scores to at least 8/10.\"\"\"
+5. What would need to improve to raise all 3 scores to at least 8/10.
+"""
 
         try:
             response = client.chat.completions.create(
@@ -83,10 +89,10 @@ Please respond with:
         advisor_messages.append((name, reply))
 
     st.session_state.round += 1
-    st.session_state["user_text_input_reset"] = True  # trigger reset next run
+    st.session_state["user_text_input_reset"] = True
     st.experimental_rerun()
 
-# Display log
+# Display conversation thread
 st.markdown("## Boardroom Session Log")
 for name, msg in st.session_state.chat_log:
     st.markdown(f"**{name}**: {msg}")
