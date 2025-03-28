@@ -15,32 +15,30 @@ advisors = {
     "Sam Altman": "You are Sam Altman, focused on scalable innovation, defensibility, and long-term societal impact. Evaluate market size, moat, and bold future bets using first-principles thinking."
 }
 
-# Set up Streamlit UI
+# Set up UI
 st.set_page_config(page_title="BoardroomOS", layout="centered")
 st.title("BoardroomOS")
-st.write("Your AI board of directors will simulate discussion and iterate together until consensus is reached. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence. The session ends only when every advisor scores ≥8/10 in all three categories.")
+st.write("Your AI board of directors will simulate discussion and iterate together until consensus is reached. Scoring is based on: Capital Allocation, Market Advantage, and Business Model Confidence.")
 
-# Initialize session state
+# Session state
 if "chat_log" not in st.session_state:
     st.session_state.chat_log = []
 if "round" not in st.session_state:
     st.session_state.round = 0
 
-# Uncontrolled input field (no key!)
+# User input — uncontrolled input field (no key)
 user_input = st.text_area("Describe your business challenge or respond to the board:", height=100)
 
-# Main interaction
+# Button click behavior
 if st.button("Continue Board Session") and user_input.strip():
     st.session_state.chat_log.append(("You", user_input))
 
     for name, persona in advisors.items():
-        # Build context
         thread = ""
         for prior_name, prior_msg in st.session_state.chat_log[-len(advisors):]:
             if prior_name != name:
                 thread += f"{prior_name}: {prior_msg}\n"
 
-        # Prompt per advisor
         prompt = f"""Round {st.session_state.round}:
 
 Business challenge: {user_input}
@@ -71,9 +69,10 @@ Please respond with:
         st.session_state.chat_log.append((name, reply))
 
     st.session_state.round += 1
-    st.experimental_rerun()
+    # NOTE: We do NOT rerun, and we do NOT reset the text field forcibly.
+    # The user can edit or submit again naturally.
 
-# Show chat log
+# Session log
 st.markdown("## Boardroom Session Log")
 for name, msg in st.session_state.chat_log:
     st.markdown(f"**{name}**: {msg}")
